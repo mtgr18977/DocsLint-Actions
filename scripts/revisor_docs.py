@@ -25,9 +25,9 @@ def corrigir_frase(texto_original, client_anthropic):
     """
     
     try:
-        # Usando a versão hardcoded de Junho/2024 para garantir estabilidade e evitar erro 404
+        # MUDANÇA: Usando Claude 3 Haiku (versão estável e universalmente disponível)
         message = client_anthropic.messages.create(
-            model="claude-3-5-sonnet-20240620",
+            model="claude-3-haiku-20240307",
             max_tokens=300,
             temperature=0,
             messages=[{"role": "user", "content": prompt}]
@@ -61,7 +61,7 @@ def main():
 
     print(f"🔍 Iniciando análise de: {arquivo_path}")
 
-    # Autenticação robusta para evitar DeprecationWarning
+    # Autenticação robusta
     auth = Auth.Token(github_token)
     gh = Github(auth=auth)
     
@@ -106,17 +106,16 @@ def main():
 ```
 """
             try:
-                # CORREÇÃO AQUI: Mudado de 'commit_id' para 'commit'
+                # Usa 'commit' em vez de 'commit_id'
                 pr.create_review_comment(
                     body=body,
-                    commit=last_commit, # <--- Correção aplicada aqui
+                    commit=last_commit,
                     path=arquivo_path,
                     line=i + 1
                 )
                 sugestoes += 1
                 print("   ✅ Comentário postado.")
             except Exception as e:
-                # Erros comuns: linha não alterada no PR, erro de permissão, etc.
                 print(f"   ⚠️ Não postado (Linha não alterada no PR ou erro API): {e}")
 
     if sugestoes == 0:
