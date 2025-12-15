@@ -1,0 +1,61 @@
+name: Revisor de Documentação AI
+
+# Gatilho: Roda apenas em Pull Requests e apenas se arquivos md/mdx mudarem
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '**.mdx'
+
+jobs:
+  revisao-passiva:
+    runs-on: ubuntu-latest
+    
+    # Permissões necessárias para ler o código
+    permissions:
+      contents: read
+
+    steps:
+      # 1. Baixa o código do repositório
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Importante para ver o histórico de diffs
+
+      # 2. Configura o Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. Instala as dependências (anthropic)
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+
+      # 4. Descobre QUAIS arquivos mudaram neste PR
+      # Usamos uma action pronta muito boa para isso
+      - name: Listar arquivos modificados
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **.md
+            **.mdx
+
+      # 5. Roda o script Python para cada arquivo modificado
+      - name: Rodar Revisor AI
+        env:
+          # AQUI é onde a mágica da chave acontece. 
+          # O GitHub pega do cofre (secrets) e entrega para o script.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "Iniciando revisão..."
+          # O loop abaixo pega a lista de arquivos mudados e roda o python para cada um
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "---------------------------------------------------"
+            echo "Analisando: $file"
+            python scripts/revisor_docs.py "$file"
+            echo "---------------------------------------------------"
+          done
